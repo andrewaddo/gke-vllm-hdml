@@ -1,12 +1,14 @@
 # vllm-h100-llama3-70b
-Deploy Llama3.3 70B model on GKE using vllm
+Deploy a Llama3.3 70B model on GKE using vllm
 
 ## Create the cluster
+Set the needed environment variables
 ```
 CLUSTER_NAME=ducdo-llama3-h100
 PROJECT_ID=gpu-launchpad-playground
 REGION=us-central1
 ```
+Create the cluster
 ```
 gcloud container clusters create $CLUSTER_NAME \
     --project=$PROJECT_ID \
@@ -15,14 +17,15 @@ gcloud container clusters create $CLUSTER_NAME \
     --release-channel=rapid \
     --num-nodes=1
 ```
-
 ## Create the node pool
+Set the needed environment variables
 ```
 NODE_POOL_NAME=ducdo-a3-high4m
 ZONE1=us-central1-a
 ZONE2=us-central1-b
 ZONE3=us-central1-c
 ```
+Create the node pool
 ```
 gcloud container node-pools create $NODE_POOL_NAME \
     --node-locations=$ZONE1,$ZONE2,$ZONE3 \
@@ -35,11 +38,8 @@ gcloud container node-pools create $NODE_POOL_NAME \
     --spot \
     --location=$REGION
 ```
-
 ## Create the deployment
-
 ### Create deployment manifest vllm-h100-llama370b.yaml
-
 ```
 apiVersion: apps/v1
 kind: Deployment
@@ -89,7 +89,6 @@ spec:
           medium: Memory
 ```
 ### Create the service manifest llm-service.yaml
-
 ```
 apiVersion: v1
 kind: Service
@@ -105,9 +104,7 @@ spec:
     app: model-server
   type: ClusterIP
 ```
-
 ### Use kubectl to deploy
-
 ```
 gcloud container clusters get-credentials $CLUSTER_NAME \
     --location=$REGION
@@ -168,10 +165,8 @@ gcloud container clusters delete $CLUSTER_NAME --region=$REGION
 ```
 
 Notes
-1. This tutorial uses Spot instance type which may causes delay in node pool scaling
-
-TODOs
-1. At the moment, there seems to be limited ways to debug the issue when the new VM instance with spot GPU cannot be provisioned and added to the instance group / node pool. I was digging deep into the Log Explorer, using the node pool name as the free text filtering returned this log indicating resource quota limitation issue.
+1. This tutorial uses the Spot instance type which may cause delay in node pool scaling
+2. Use the node pool name as the free text filtering returned this log indicating resource quota limitation issue.
 ```
 localizedMessage: [
   0: {
@@ -180,4 +175,3 @@ localizedMessage: [
   }
 ]
 ```
-3. 
