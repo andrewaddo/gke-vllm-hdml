@@ -166,7 +166,7 @@ gcloud container clusters delete $CLUSTER_NAME --region=$REGION
 
 Notes
 1. This tutorial uses the Spot instance type which may cause delay in node pool scaling
-2. Use the node pool name as the free text filtering returned this log indicating resource quota limitation issue.
+2. Use the node pool name as the free text filtering in Log Explorer returned this log indicating resource quota limitation issue.
 ```
 localizedMessage: [
   0: {
