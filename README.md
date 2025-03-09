@@ -111,11 +111,18 @@ spec:
 ```
 gcloud container clusters get-credentials $CLUSTER_NAME \
     --location=$REGION
--- create a secret to keep the HF Token
+```
+Create a secret to keep the HF Token
+```
+HF_TOKEN=
+```
+```
 kubectl create secret generic ducdo-hf-secret \
     --from-literal=hf_api_token=$HF_TOKEN \
     --dry-run=client -o yaml | kubectl apply -f -
--- deployment and service
+```
+Deployment and service
+```
 kubectl apply -f vllm-h100-llama370b.yaml
 kubectl apply -f llm-service.yaml
 ```
@@ -152,6 +159,13 @@ curl http://localhost:8080/v1/completions -H "Content-Type: application/json" -d
 }'
 ```
 
+## Clean up
+
+```
+kubectl delete deployment vllm-h100-llama370b-deployment
+kubectl delete service llm-service
+gcloud container clusters delete $CLUSTER_NAME --region=$REGION
+```
 
 Notes
 1. This tutorial uses Spot instance type which may causes delay in node pool scaling
