@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-server
+  template:
+    metadata:
+      labels:
+        app: model-server
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-h100-80gb
+      containers:
+      - name: inference-server
+        image: vllm/vllm-openai:v0.8.5
+        command:
+          - sh
+          - -c
+          - "USE_VLLM_V1=1 vllm serve '/data/Llama-3.3-70B-Instruct' --tensor-parallel-size 4 --max_model_len 128000 --port 8080 --gpu-memory-utilization 0.95 --trust-remote-code"
+        resources:
+          limits:
+            nvidia.com/gpu: "4"
+        ports:
+          - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /data
+          name: llama3-70b
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      - name: llama3-70b
+        persistentVolumeClaim:
+          claimName: hdml-static-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-service
+spec:
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: model-server
+  type: ClusterIP

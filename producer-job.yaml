@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: producer-job
+spec:
+  template:  # Template for the Pods the Job will create
+    spec:
+      nodeSelector:
+        cloud.google.com/machine-family: c3
+      containers:
+      - name: copy
+        resources:
+          requests:
+            cpu: "32"
+          limits:
+            cpu: "32"
+        image: huggingface/downloader:0.17.3
+        command: [ "huggingface-cli" ]
+        args:
+        - download
+        - meta-llama/Llama-3.3-70B-Instruct
+        - --local-dir=/data/Llama-3.3-70B-Instruct
+        - --local-dir-use-symlinks=False
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secret
+              key: hf_api_token
+        - name: HF_HOME
+          value: "/data/.hf_cache"
+        volumeMounts:
+          - mountPath: "/data"
+            name: volume
+          - name: dshm
+            mountPath: /dev/shm
+      restartPolicy: Never
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: volume
+          persistentVolumeClaim:
+            claimName: producer-pvc
+  parallelism: 1         # Run 1 Pods concurrently
+  completions: 1         # Once 1 Pods complete successfully, the Job is done
+  backoffLimit: 4        # Max retries on failure
